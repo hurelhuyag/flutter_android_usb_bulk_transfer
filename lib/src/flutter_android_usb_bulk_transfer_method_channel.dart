@@ -31,4 +31,16 @@ class MethodChannelFlutterAndroidUsbBulkTransfer extends FlutterAndroidUsbBulkTr
     if (!Platform.isAndroid) return null;
     return await methodChannel.invokeMethod<Uint8List>('read', length);
   }
+
+  @override
+  Future<void> disconnect() async {
+    if (!Platform.isAndroid) return;
+    await methodChannel.invokeMethod('disconnect');
+  }
+
+  @override
+  Future<bool> isConnected() async {
+    if (!Platform.isAndroid) return false;
+    return await methodChannel.invokeMethod('isConnected');
+  }
 }

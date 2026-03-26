@@ -36,4 +36,12 @@ abstract class FlutterAndroidUsbBulkTransferPlatform extends PlatformInterface {
   Future<Uint8List?> read(int length) {
     throw UnimplementedError('read() has not been implemented.');
   }
+
+  Future<void> disconnect() {
+    throw UnimplementedError('connect() has not been implemented.');
+  }
+
+  Future<bool> isConnected() {
+    throw UnimplementedError('connect() has not been implemented.');
+  }
 }

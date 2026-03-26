@@ -57,6 +57,8 @@ public class PosEscPrinter implements AutoCloseable {
             return;
         }
         if (!usbManager.hasPermission(usbDevice)) {
+            Log.d(TAG, "Requesting USB permission");
+
             var intentFilter = new IntentFilter(ACTION_USB_PERMISSION);
             context.registerReceiver(usbReceiver, intentFilter, 0);
 
@@ -83,6 +85,10 @@ public class PosEscPrinter implements AutoCloseable {
             boolean claimed = connection.claimInterface(usbInterface, true);
             Log.d(TAG, "Interface claimed: " + claimed);
         }
+    }
+
+    public boolean isConnected() {
+        return connection != null;
     }
 
     public void write(byte[] buf) {

@@ -17,4 +17,12 @@ class FlutterAndroidUsbBulkTransfer {
   Future<Uint8List?> read(int length) {
     return FlutterAndroidUsbBulkTransferPlatform.instance.read(length);
   }
+
+  Future<void> disconnect() {
+    return FlutterAndroidUsbBulkTransferPlatform.instance.disconnect();
+  }
+
+  Future<bool> isConnected() {
+    return FlutterAndroidUsbBulkTransferPlatform.instance.isConnected();
+  }
 }

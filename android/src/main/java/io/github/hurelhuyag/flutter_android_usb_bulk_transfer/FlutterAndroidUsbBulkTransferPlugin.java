@@ -60,6 +60,16 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
           result.success(null);
         }
         break;
+      case "disconnect":
+        if (printer != null) {
+          printer.close();
+          printer = null;
+        }
+        result.success(null);
+        break;
+      case "isConnected":
+        result.success(printer != null && printer.isConnected());
+        break;
       default:
         result.notImplemented();
         break;
