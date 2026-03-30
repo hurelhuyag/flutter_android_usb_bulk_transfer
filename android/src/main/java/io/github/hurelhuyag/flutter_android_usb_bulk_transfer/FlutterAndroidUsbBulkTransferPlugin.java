@@ -57,8 +57,13 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
             result.error("FILE_NOT_FOUND", "file not found", path);
             return;
           }
-          var bitmap = PdfUtil.renderPdfPage(file);
-          var cmd = PosImageUtil.buildPosEscImageCommand(bitmap);
+          var bitmap = PdfUtil.renderPdfPage(new File(path));
+          byte[] cmd;
+          try {
+            cmd = PosImageUtil.buildPosEscImageCommand(bitmap);
+          } finally {
+            bitmap.recycle();
+          }
           printer.write(cmd);
         }
         result.success(null);
