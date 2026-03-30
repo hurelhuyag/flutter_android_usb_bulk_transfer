@@ -14,6 +14,10 @@ class FlutterAndroidUsbBulkTransfer {
     return FlutterAndroidUsbBulkTransferPlatform.instance.write(data);
   }
 
+  Future<void> writePdf(String path) {
+    return FlutterAndroidUsbBulkTransferPlatform.instance.writePdf(path);
+  }
+
   Future<Uint8List?> read(int length) {
     return FlutterAndroidUsbBulkTransferPlatform.instance.read(length);
   }

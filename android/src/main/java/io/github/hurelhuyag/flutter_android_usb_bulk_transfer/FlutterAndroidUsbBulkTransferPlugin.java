@@ -10,6 +10,8 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 
+import java.io.File;
+
 /** FlutterAndroidUsbBulkTransferPlugin */
 public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, MethodCallHandler {
   /// The MethodChannel that will the communication between Flutter and native Android
@@ -44,6 +46,20 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
         byte[] data = (byte[]) call.arguments;
         if (printer != null) {
           printer.write(data);
+        }
+        result.success(null);
+        break;
+      case "writePdf":
+        String path = (String) call.arguments;
+        if (printer != null) {
+          var file = new File(path);
+          if (!file.exists()) {
+            result.error("FILE_NOT_FOUND", "file not found", path);
+            return;
+          }
+          var bitmap = PdfUtil.renderPdfPage(file);
+          var cmd = PosImageUtil.buildPosEscImageCommand(bitmap);
+          printer.write(cmd);
         }
         result.success(null);
         break;

@@ -33,6 +33,10 @@ abstract class FlutterAndroidUsbBulkTransferPlatform extends PlatformInterface {
     throw UnimplementedError('write() has not been implemented.');
   }
 
+  Future<void> writePdf(String path) {
+    throw UnimplementedError('writePdf() has not been implemented.');
+  }
+
   Future<Uint8List?> read(int length) {
     throw UnimplementedError('read() has not been implemented.');
   }

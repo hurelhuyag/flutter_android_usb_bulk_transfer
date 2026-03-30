@@ -27,6 +27,12 @@ class MethodChannelFlutterAndroidUsbBulkTransfer extends FlutterAndroidUsbBulkTr
   }
 
   @override
+  Future<void> writePdf(String path) async {
+    if (!Platform.isAndroid) return;
+    await methodChannel.invokeMethod('writePdf', path);
+  }
+
+  @override
   Future<Uint8List?> read(int length) async {
     if (!Platform.isAndroid) return null;
     return await methodChannel.invokeMethod<Uint8List>('read', length);
