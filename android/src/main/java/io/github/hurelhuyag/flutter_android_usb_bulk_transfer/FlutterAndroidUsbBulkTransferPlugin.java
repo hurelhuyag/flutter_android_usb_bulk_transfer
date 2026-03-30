@@ -30,9 +30,6 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
     switch (call.method) {
-      case "getPlatformVersion":
-        result.success("Android " + android.os.Build.VERSION.RELEASE);
-        break;
       case "connect":
         Integer vid = call.argument("vid");
         Integer pid = call.argument("pid");

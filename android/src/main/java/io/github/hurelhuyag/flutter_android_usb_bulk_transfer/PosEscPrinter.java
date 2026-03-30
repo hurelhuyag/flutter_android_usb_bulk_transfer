@@ -96,10 +96,18 @@ public class PosEscPrinter implements AutoCloseable {
             Log.d(TAG, "Printer not connected");
             return;
         }
-        var sent = connection.bulkTransfer(endpointOut, buf, 0, buf.length, 5000);
-        Log.d(TAG, "Send Status: "  + sent);
-        if (sent != buf.length) {
-            Log.e(TAG, "Send failed");
+
+        var chunkSize = 4096;
+        for (var i = 0; i < buf.length; i += chunkSize) {
+            var remaining = buf.length - i;
+            var len = Math.min(remaining, chunkSize);
+            Log.d(TAG, "Sending: i:"  + i + ", len:" + len);
+            var sent = connection.bulkTransfer(endpointOut, buf, i, len, 5000);
+            Log.d(TAG, "Send Status: "  + sent);
+            if (sent != len) {
+                Log.e(TAG, "Send failed");
+                break;
+            }
         }
     }
 
