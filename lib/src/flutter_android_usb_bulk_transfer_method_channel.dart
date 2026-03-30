@@ -12,6 +12,13 @@ class MethodChannelFlutterAndroidUsbBulkTransfer extends FlutterAndroidUsbBulkTr
   final methodChannel = const MethodChannel('flutter_android_usb_bulk_transfer');
 
   @override
+  Future<List<Map<String, dynamic>>> listUsbDevices() async {
+    if (!Platform.isAndroid) return [];
+    final devices = await methodChannel.invokeListMethod<Map<dynamic, dynamic>>('listUsbDevices');
+    return devices?.map((e) => e.cast<String, dynamic>()).toList() ?? [];
+  }
+  
+  @override
   Future<void> connect({int? vid, int? pid}) async {
     if (!Platform.isAndroid) return;
     await methodChannel.invokeMethod('connect', {

@@ -1,6 +1,7 @@
 package io.github.hurelhuyag.flutter_android_usb_bulk_transfer;
 
 import android.content.Context;
+import android.hardware.usb.UsbManager;
 
 import androidx.annotation.NonNull;
 
@@ -11,6 +12,10 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /** FlutterAndroidUsbBulkTransferPlugin */
 public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, MethodCallHandler {
@@ -32,6 +37,22 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
     switch (call.method) {
+      case "listUsbDevices":
+        var usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
+        var usbDevices = usbManager.getDeviceList().values().stream()
+              .map(d -> Map.of(
+                  "vendorId", d.getVendorId(),
+                  "productId", d.getProductId(),
+                  "deviceId", d.getDeviceId(),
+                  "manufacturerName", Objects.requireNonNull(d.getManufacturerName()),
+                  "productName", Objects.requireNonNull(d.getProductName()),
+                  "deviceName", d.getDeviceName(),
+                  "deviceClass", d.getDeviceClass(),
+                  "deviceProtocol", d.getDeviceProtocol()
+              ))
+              .collect(Collectors.toList());
+        result.success(usbDevices);
+        break;
       case "connect":
         Integer vid = call.argument("vid");
         Integer pid = call.argument("pid");

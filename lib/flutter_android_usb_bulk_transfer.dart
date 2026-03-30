@@ -6,6 +6,10 @@ export 'src/flutter_android_usb_bulk_transfer_platform_interface.dart' show Flut
 
 class FlutterAndroidUsbBulkTransfer {
 
+  Future<List<Map<String, dynamic>>> listUsbDevices() {
+    return FlutterAndroidUsbBulkTransferPlatform.instance.listUsbDevices();
+  }
+  
   Future<void> connect({int? vid, int? pid}) {
     return FlutterAndroidUsbBulkTransferPlatform.instance.connect(vid: vid, pid: pid);
   }

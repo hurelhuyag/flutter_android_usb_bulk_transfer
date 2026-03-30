@@ -25,6 +25,10 @@ abstract class FlutterAndroidUsbBulkTransferPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  Future<List<Map<String, dynamic>>> listUsbDevices() {
+    throw UnimplementedError('listUsbDevices() has not been implemented.');
+  }
+
   Future<void> connect({int? vid, int? pid}) {
     throw UnimplementedError('connect() has not been implemented.');
   }
@@ -42,10 +46,10 @@ abstract class FlutterAndroidUsbBulkTransferPlatform extends PlatformInterface {
   }
 
   Future<void> disconnect() {
-    throw UnimplementedError('connect() has not been implemented.');
+    throw UnimplementedError('disconnect() has not been implemented.');
   }
 
   Future<bool> isConnected() {
-    throw UnimplementedError('connect() has not been implemented.');
+    throw UnimplementedError('isConnected() has not been implemented.');
   }
 }
