@@ -1,7 +1,7 @@
 name: flutter_android_usb_bulk_transfer
 description: "Transfers data between USB device using bulkTransfer method"
 version: 0.0.1
-homepage:
+homepage: https://github.com/hurelhuyag/flutter_android_usb_bulk_transfer
 
 environment:
   sdk: ^3.11.3
