@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'dithering.dart';
 import 'flutter_android_usb_bulk_transfer_platform_interface.dart';
 
 /// An implementation of [FlutterAndroidUsbBulkTransferPlatform] that uses method channels.
@@ -35,9 +36,14 @@ class MethodChannelFlutterAndroidUsbBulkTransfer extends FlutterAndroidUsbBulkTr
   }
 
   @override
-  Future<void> writePdf(String path) async {
+  Future<void> writePdf(String path, {required double threshold, required Dithering dithering}) async {
     if (!Platform.isAndroid) return;
-    await methodChannel.invokeMethod('writePdf', path);
+    await methodChannel.invokeMethod('writePdf', {
+      'path': path,
+      'threshold': threshold,
+      'dithering': dithering.algorithm.name,
+      'strength': dithering.strength,
+    });
   }
 
   @override

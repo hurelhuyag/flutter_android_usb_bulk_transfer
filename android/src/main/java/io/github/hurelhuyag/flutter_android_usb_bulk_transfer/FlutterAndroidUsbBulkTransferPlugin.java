@@ -77,7 +77,24 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
         result.success(null);
         break;
       case "writePdf":
-        String path = (String) call.arguments;
+        String path = call.argument("path");
+        Double threshold = call.argument("threshold");
+        String ditheringName = call.argument("dithering");
+        Double strength = call.argument("strength");
+        if (path == null || threshold == null || ditheringName == null || strength == null) {
+          result.error("INVALID_ARGUMENT", "path, threshold, dithering and strength are required", null);
+          return;
+        }
+        PosImageUtil.Dithering dithering = switch (ditheringName) {
+          case "none" -> PosImageUtil.Dithering.NONE;
+          case "floydSteinberg" -> PosImageUtil.Dithering.FLOYD_STEINBERG;
+          case "atkinson" -> PosImageUtil.Dithering.ATKINSON;
+          default -> null;
+        };
+        if (dithering == null) {
+          result.error("INVALID_ARGUMENT", "unknown dithering algorithm", ditheringName);
+          return;
+        }
         if (printer != null) {
           var file = new File(path);
           if (!file.exists()) {
@@ -87,7 +104,7 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
           var bitmap = PdfUtil.renderPdfPage(new File(path));
           byte[] cmd;
           try {
-            cmd = PosImageUtil.buildPosEscImageCommand(bitmap);
+            cmd = PosImageUtil.buildPosEscImageCommand(bitmap, threshold, dithering, strength);
           } finally {
             bitmap.recycle();
           }

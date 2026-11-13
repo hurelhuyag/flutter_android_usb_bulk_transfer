@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
+import 'dithering.dart';
 import 'flutter_android_usb_bulk_transfer_method_channel.dart';
 
 abstract class FlutterAndroidUsbBulkTransferPlatform extends PlatformInterface {
@@ -37,7 +38,7 @@ abstract class FlutterAndroidUsbBulkTransferPlatform extends PlatformInterface {
     throw UnimplementedError('write() has not been implemented.');
   }
 
-  Future<void> writePdf(String path) {
+  Future<void> writePdf(String path, {required double threshold, required Dithering dithering}) {
     throw UnimplementedError('writePdf() has not been implemented.');
   }
 

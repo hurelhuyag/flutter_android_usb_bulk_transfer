@@ -71,6 +71,66 @@ Renders a PDF page into a bitmap and converts it to ESC/POS image commands.
 await plugin.writePdf('/path/to/your/document.pdf');
 ```
 
+Two optional parameters control how colours and greys are converted to black and white dots:
+
+| Parameter | Default | Effect |
+|---|---|---|
+| `threshold` | `0.7` | Luminance (0-1) below which a dot prints black. Raise it to print darker. |
+| `dithering` | `Dithering.none` | How greys and colours are simulated with dot patterns. |
+
+| `dithering` | Result | Use for |
+|---|---|---|
+| `Dithering.none` | Solid black and white, decided by `threshold` alone. | Logos, QR codes, barcodes, text. |
+| `Dithering.floydSteinberg()` | Smooth, fine-grained greys that keep even very light tints. Dark colours get white specks. | Photos, soft gradients. |
+| `Dithering.atkinson()` | Higher-contrast greys; dark colours stay solid and light tints print as sparser dots. | Logos with gradients or shadows. |
+
+Both dithering algorithms take an optional `strength` (0-1, default 1). It is the fraction of each dot's rounding
+error that is spread to its neighbours: lower values keep more of the image solid.
+
+```dart
+// Logos, QR codes and text (default): solid output.
+await plugin.writePdf(path);
+
+// Logo with gradients or shadows.
+await plugin.writePdf(path, dithering: const Dithering.atkinson());
+
+// Photo.
+await plugin.writePdf(path, dithering: const Dithering.floydSteinberg());
+
+// In between: shaded mid-tones, mostly solid.
+await plugin.writePdf(path, dithering: const Dithering.atkinson(strength: 0.5));
+```
+
+### How logos print
+
+Each logo below was converted by the plugin's own encoder and decoded back into printer dots. The logos are
+fictional brands drawn for this README.
+
+| Original | `threshold: 0.5` | Default | `Dithering.floydSteinberg()` | `Dithering.atkinson()` |
+|---|---|---|---|---|
+| ![Solid logo](docs/images/solid_original.png) | ![](docs/images/solid_t50.png) | ![](docs/images/solid_default.png) | ![](docs/images/solid_fs.png) | ![](docs/images/solid_atkinson.png) |
+| ![Gradient logo](docs/images/gradient_original.png) | ![](docs/images/gradient_t50.png) | ![](docs/images/gradient_default.png) | ![](docs/images/gradient_fs.png) | ![](docs/images/gradient_atkinson.png) |
+| ![Light colour logo](docs/images/light_original.png) | ![](docs/images/light_t50.png) | ![](docs/images/light_default.png) | ![](docs/images/light_fs.png) | ![](docs/images/light_atkinson.png) |
+| ![Badge logo](docs/images/badge_original.png) | ![](docs/images/badge_t50.png) | ![](docs/images/badge_default.png) | ![](docs/images/badge_fs.png) | ![](docs/images/badge_atkinson.png) |
+| ![Shadow logo](docs/images/shadow_original.png) | ![](docs/images/shadow_t50.png) | ![](docs/images/shadow_default.png) | ![](docs/images/shadow_fs.png) | ![](docs/images/shadow_atkinson.png) |
+
+- **Solid dark colours (KESTREL)** print the same at every threshold and with Atkinson. Floyd–Steinberg adds white
+  specks, because it reproduces navy as slightly lighter than black.
+- **Gradients (SUMMIT)**: at 0.5 the lighter tops of the mountains are cut off. The default prints the shape whole.
+  Both dithering algorithms shade the mountains and keep the light-orange sun; Atkinson keeps the navy wordmark
+  solid, Floyd–Steinberg speckles it.
+- **Light colours (SUNNY MART)**: at 0.5 nothing prints. The default keeps orange but drops yellow and pale text.
+  Use dithering, or raise `threshold` to about 0.85, for logos built from light colours.
+- **White text on a colour (FRESH)**: the default prints a solid badge with crisp white text. At 0.5 the green badge
+  disappears. Both dithering algorithms turn the green into a dot texture that makes small white text harder to
+  read.
+- **Thin light lines and soft shadows (ORBIT)**: a line whose brightness is close to the threshold prints as a
+  dashed line, like the light-grey ring at the default 0.7. Lower `threshold` to about 0.5 to drop the ring and the
+  shadow cleanly. Raising it to 0.85 prints the ring solid but turns the soft shadow into a black smear behind the
+  text.
+
+Keep `Dithering.none` for pages with QR codes or barcodes so their modules stay solid.
+
 ## Android Setup
 
 Ensure your `AndroidManifest.xml` includes the USB host feature. The plugin handles runtime permission requests.

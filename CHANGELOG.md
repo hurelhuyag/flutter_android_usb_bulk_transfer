@@ -1,3 +1,14 @@
+## 0.0.3
+
+* Raise the black/white cutoff for `writePdf` from 50% to 70% luminance. Logos with light gradients now print
+  whole, white text stays readable on grey and coloured fills, and light coloured or grey text no longer disappears.
+  QR codes and black text print the same, with slightly bolder edges.
+* `writePdf` takes optional `threshold` (0-1, default 0.7) and `dithering` parameters. `dithering` is
+  `Dithering.none` (default: solid black and white for logos, QR codes and text), `Dithering.floydSteinberg()` or
+  `Dithering.atkinson()`. Both algorithms take an optional `strength` (0-1, default 1) to keep more of the image
+  solid.
+* README: "How logos print" shows sample logos converted at each setting.
+
 ## 0.0.2
 
 * Fix gibberish output when printing long PDFs: the raster image is now sent as 256-row `GS v 0` bands instead of

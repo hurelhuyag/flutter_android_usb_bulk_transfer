@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
+import 'src/dithering.dart';
 import 'src/flutter_android_usb_bulk_transfer_platform_interface.dart';
 
+export 'src/dithering.dart';
 export 'src/flutter_android_usb_bulk_transfer_platform_interface.dart' show FlutterAndroidUsbBulkTransferPlatform;
 
 class FlutterAndroidUsbBulkTransfer {
@@ -23,8 +25,20 @@ class FlutterAndroidUsbBulkTransfer {
     return FlutterAndroidUsbBulkTransferPlatform.instance.write(data);
   }
 
-  Future<void> writePdf(String path) {
-    return FlutterAndroidUsbBulkTransferPlatform.instance.writePdf(path);
+  /// Prints the first page of the PDF at [path] as an ESC/POS raster image, 576 dots wide.
+  ///
+  /// [threshold] (0-1) is the luminance below which a dot prints black. Raise it to print darker. The default 0.7
+  /// keeps logos with light gradients whole and white text readable on grey or coloured backgrounds.
+  ///
+  /// [dithering] chooses how greys and colours are simulated with dot patterns. The default [Dithering.none] prints
+  /// solid black and white, which is best for logos, QR codes and text. [Dithering.floydSteinberg] and
+  /// [Dithering.atkinson] reproduce gradients, shadows and photos.
+  Future<void> writePdf(String path, {double threshold = 0.7, Dithering dithering = Dithering.none}) {
+    if (threshold < 0 || threshold > 1) throw ArgumentError.value(threshold, 'threshold', 'must be between 0 and 1');
+    if (dithering.strength < 0 || dithering.strength > 1) {
+      throw ArgumentError.value(dithering.strength, 'dithering.strength', 'must be between 0 and 1');
+    }
+    return FlutterAndroidUsbBulkTransferPlatform.instance.writePdf(path, threshold: threshold, dithering: dithering);
   }
 
   Future<Uint8List?> read(int length) {
