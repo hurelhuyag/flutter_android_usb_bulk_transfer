@@ -108,11 +108,11 @@ fictional brands drawn for this README.
 
 | Original | `threshold: 0.5` | Default | `Dithering.floydSteinberg()` | `Dithering.atkinson()` |
 |---|---|---|---|---|
-| ![Solid logo](docs/images/solid_original.png) | ![](docs/images/solid_t50.png) | ![](docs/images/solid_default.png) | ![](docs/images/solid_fs.png) | ![](docs/images/solid_atkinson.png) |
-| ![Gradient logo](docs/images/gradient_original.png) | ![](docs/images/gradient_t50.png) | ![](docs/images/gradient_default.png) | ![](docs/images/gradient_fs.png) | ![](docs/images/gradient_atkinson.png) |
-| ![Light colour logo](docs/images/light_original.png) | ![](docs/images/light_t50.png) | ![](docs/images/light_default.png) | ![](docs/images/light_fs.png) | ![](docs/images/light_atkinson.png) |
-| ![Badge logo](docs/images/badge_original.png) | ![](docs/images/badge_t50.png) | ![](docs/images/badge_default.png) | ![](docs/images/badge_fs.png) | ![](docs/images/badge_atkinson.png) |
-| ![Shadow logo](docs/images/shadow_original.png) | ![](docs/images/shadow_t50.png) | ![](docs/images/shadow_default.png) | ![](docs/images/shadow_fs.png) | ![](docs/images/shadow_atkinson.png) |
+| ![Solid logo](doc/images/solid_original.png) | ![](doc/images/solid_t50.png) | ![](doc/images/solid_default.png) | ![](doc/images/solid_fs.png) | ![](doc/images/solid_atkinson.png) |
+| ![Gradient logo](doc/images/gradient_original.png) | ![](doc/images/gradient_t50.png) | ![](doc/images/gradient_default.png) | ![](doc/images/gradient_fs.png) | ![](doc/images/gradient_atkinson.png) |
+| ![Light colour logo](doc/images/light_original.png) | ![](doc/images/light_t50.png) | ![](doc/images/light_default.png) | ![](doc/images/light_fs.png) | ![](doc/images/light_atkinson.png) |
+| ![Badge logo](doc/images/badge_original.png) | ![](doc/images/badge_t50.png) | ![](doc/images/badge_default.png) | ![](doc/images/badge_fs.png) | ![](doc/images/badge_atkinson.png) |
+| ![Shadow logo](doc/images/shadow_original.png) | ![](doc/images/shadow_t50.png) | ![](doc/images/shadow_default.png) | ![](doc/images/shadow_fs.png) | ![](doc/images/shadow_atkinson.png) |
 
 - **Solid dark colours (KESTREL)** print the same at every threshold and with Atkinson. Floyd–Steinberg adds white
   specks, because it reproduces navy as slightly lighter than black.
