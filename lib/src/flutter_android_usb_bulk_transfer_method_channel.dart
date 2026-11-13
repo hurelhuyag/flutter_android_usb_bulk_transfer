@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -12,16 +10,19 @@ class MethodChannelFlutterAndroidUsbBulkTransfer extends FlutterAndroidUsbBulkTr
   @visibleForTesting
   final methodChannel = const MethodChannel('flutter_android_usb_bulk_transfer');
 
+  // defaultTargetPlatform instead of dart:io's Platform: it compiles for the web and tests can override it.
+  bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   @override
   Future<List<Map<String, dynamic>>> listUsbDevices() async {
-    if (!Platform.isAndroid) return [];
+    if (!_isAndroid) return [];
     final devices = await methodChannel.invokeListMethod<Map<dynamic, dynamic>>('listUsbDevices');
     return devices?.map((e) => e.cast<String, dynamic>()).toList() ?? [];
   }
-  
+
   @override
   Future<bool> connect({int? vid, int? pid}) async {
-    if (!Platform.isAndroid) return false;
+    if (!_isAndroid) return false;
     final connected = await methodChannel.invokeMethod<bool>('connect', {
       'vid': vid,
       'pid': pid,
@@ -31,13 +32,13 @@ class MethodChannelFlutterAndroidUsbBulkTransfer extends FlutterAndroidUsbBulkTr
 
   @override
   Future<void> write(Uint8List data) async {
-    if (!Platform.isAndroid) return;
+    if (!_isAndroid) return;
     await methodChannel.invokeMethod('write', data);
   }
 
   @override
   Future<void> writePdf(String path, {required double threshold, required Dithering dithering}) async {
-    if (!Platform.isAndroid) return;
+    if (!_isAndroid) return;
     await methodChannel.invokeMethod('writePdf', {
       'path': path,
       'threshold': threshold,
@@ -48,19 +49,19 @@ class MethodChannelFlutterAndroidUsbBulkTransfer extends FlutterAndroidUsbBulkTr
 
   @override
   Future<Uint8List?> read(int length) async {
-    if (!Platform.isAndroid) return null;
+    if (!_isAndroid) return null;
     return await methodChannel.invokeMethod<Uint8List>('read', length);
   }
 
   @override
   Future<void> disconnect() async {
-    if (!Platform.isAndroid) return;
+    if (!_isAndroid) return;
     await methodChannel.invokeMethod('disconnect');
   }
 
   @override
   Future<bool> isConnected() async {
-    if (!Platform.isAndroid) return false;
-    return await methodChannel.invokeMethod('isConnected');
+    if (!_isAndroid) return false;
+    return await methodChannel.invokeMethod<bool>('isConnected') ?? false;
   }
 }

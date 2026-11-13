@@ -8,6 +8,16 @@
   `Dithering.atkinson()`. Both algorithms take an optional `strength` (0-1, default 1) to keep more of the image
   solid.
 * README: "How logos print" shows sample logos converted at each setting.
+* USB transfers run on a background thread, one call at a time in call order. Previously they blocked Android's
+  main thread, so a stalled printer froze the app and could trigger "app not responding".
+* `listUsbDevices` no longer fails when a device reports no manufacturer or product name; those keys are `null`.
+* **Behavior change:** `write` and `writePdf` throw `NOT_CONNECTED` when no device is connected, instead of silently
+  succeeding.
+* **Behavior change:** `read` returns only the bytes received, and throws `READ_FAILED` when nothing arrives within
+  5 seconds, instead of returning a zero-filled buffer. A non-positive `length` throws `ArgumentError`.
+* The plugin no longer imports `dart:io`, so apps that also target the web compile.
+* Add an example app, API documentation, and Dart and JUnit tests.
+* Require Flutter 3.41.5 or later, the first release with Dart 3.11.3, which this package already required.
 
 ## 0.0.2
 

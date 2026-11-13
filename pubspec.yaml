@@ -3,10 +3,17 @@ description: "Transfers data between USB device using bulkTransfer method"
 version: 0.0.3
 homepage: https://github.com/hurelhuyag/flutter_android_usb_bulk_transfer
 repository: https://github.com/hurelhuyag/flutter_android_usb_bulk_transfer
+topics:
+  - usb
+  - printer
+  - escpos
+  - thermal-printer
+  - android
 
 environment:
   sdk: ^3.11.3
-  flutter: '>=3.3.0'
+  # Flutter 3.41.5 is the first release that ships Dart 3.11.3.
+  flutter: '>=3.41.5'
 
 dependencies:
   flutter:

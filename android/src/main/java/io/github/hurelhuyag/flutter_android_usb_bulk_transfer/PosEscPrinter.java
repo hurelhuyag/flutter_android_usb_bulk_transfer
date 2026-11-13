@@ -12,18 +12,23 @@ import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
+import android.os.Handler;
 import android.util.Log;
 
 import java.util.function.Consumer;
 
+/// Not thread-safe: create and use it on one thread. The USB permission receiver runs on {@code handler}, which must
+/// belong to that thread.
 public class PosEscPrinter implements AutoCloseable {
 
     private static final String ACTION_USB_PERMISSION = "io.github.hurelhuyag.usb.USB_PERMISSION";
     private static final String TAG = "PosEscPrinter";
     private static final int WRITE_TIMEOUT_MS = 30_000;
-    private Context context;
-    private UsbManager usbManager;
-    private UsbDevice usbDevice;
+    private static final int READ_TIMEOUT_MS = 5_000;
+    private final Context context;
+    private final Handler handler;
+    private final UsbManager usbManager;
+    private final UsbDevice usbDevice;
     private UsbDeviceConnection connection;
     private UsbEndpoint endpointOut;
     private UsbEndpoint endpointIn;
@@ -31,23 +36,23 @@ public class PosEscPrinter implements AutoCloseable {
     private boolean receiverRegistered;
     private Consumer<Boolean> pendingConnect;
 
-    public PosEscPrinter(Context context) {
-        this(context, 1305, 8211);
+    public PosEscPrinter(Context context, Handler handler) {
+        this(context, handler, 1305, 8211);
     }
 
-    public PosEscPrinter(Context context, int vid, int pid) {
+    public PosEscPrinter(Context context, Handler handler, int vid, int pid) {
         this.context = context;
+        this.handler = handler;
         usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         usbDevice = findPrinter(vid, pid);
     }
 
     private UsbDevice findPrinter(int vid, int pid) {
-        var deviceList = usbManager.getDeviceList();
-        for (UsbDevice device : deviceList.values()) {
-            Log.d(TAG, "Found USB device: " + device.getDeviceName() + " VendorId: " + device.getVendorId() + " ProductId: " + device.getProductId());
-
-            if (device.getVendorId() == vid && device.getProductId() == pid) {
-                Log.d(TAG, "Selected USB device: " + device.getDeviceName() + " VendorId: " + device.getVendorId() + " ProductId: " + device.getProductId());
+        for (UsbDevice device : usbManager.getDeviceList().values()) {
+            boolean match = device.getVendorId() == vid && device.getProductId() == pid;
+            Log.d(TAG, (match ? "Selected" : "Found") + " USB device " + device.getDeviceName() + " "
+                + device.getVendorId() + ":" + device.getProductId());
+            if (match) {
                 return device;
             }
         }
@@ -73,11 +78,12 @@ public class PosEscPrinter implements AutoCloseable {
         pendingConnect = onResult;
         if (!receiverRegistered) {
             var intentFilter = new IntentFilter(ACTION_USB_PERMISSION);
-            // Android 14+ requires an explicit export flag for runtime receivers; the 3-arg overload is API 26+.
+            // Android 14+ requires an explicit export flag for runtime receivers; the flags overload is API 26+.
+            // The receiver runs on this printer's thread rather than the main thread.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.registerReceiver(usbReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+                context.registerReceiver(usbReceiver, intentFilter, null, handler, Context.RECEIVER_NOT_EXPORTED);
             } else {
-                context.registerReceiver(usbReceiver, intentFilter);
+                context.registerReceiver(usbReceiver, intentFilter, null, handler);
             }
             receiverRegistered = true;
         }
@@ -175,16 +181,16 @@ public class PosEscPrinter implements AutoCloseable {
         return true;
     }
 
-    public void read(byte[] buf) {
+    /// Reads up to {@code buf.length} bytes into {@code buf}. Returns the number of bytes received, or -1 when nothing
+    /// arrived within the timeout, the transfer failed, or the device has no bulk IN endpoint.
+    public int read(byte[] buf) {
         if (connection == null || endpointIn == null) {
-            Log.d(TAG, "Printer not connected");
-            return;
+            Log.d(TAG, "Printer not connected or has no bulk IN endpoint");
+            return -1;
         }
-        var received = connection.bulkTransfer(endpointIn, buf, 0, buf.length, 5000);
-        Log.d(TAG, "Receive Status: "  + received);
-        if (received != buf.length) {
-            Log.e(TAG, "Receive failed");
-        }
+        var received = connection.bulkTransfer(endpointIn, buf, 0, buf.length, READ_TIMEOUT_MS);
+        Log.d(TAG, "Receive Status: " + received);
+        return received;
     }
 
     @Override

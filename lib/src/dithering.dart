@@ -1,5 +1,14 @@
 /// Error-diffusion algorithms that simulate greys and colours with patterns of black dots.
-enum DitheringAlgorithm { none, floydSteinberg, atkinson }
+enum DitheringAlgorithm {
+  /// No dithering: solid black and white.
+  none,
+
+  /// Floyd–Steinberg error diffusion.
+  floydSteinberg,
+
+  /// Atkinson error diffusion.
+  atkinson,
+}
 
 /// How `writePdf` reproduces colours and greys that are neither black nor white.
 final class Dithering {
@@ -27,7 +36,10 @@ final class Dithering {
 
   const Dithering._(this.algorithm, this.strength);
 
+  /// The error-diffusion algorithm.
   final DitheringAlgorithm algorithm;
+
+  /// Fraction (0-1) of each dot's rounding error that is spread to its neighbours; 0 for [none].
   final double strength;
 
   @override

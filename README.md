@@ -9,7 +9,12 @@ A Flutter plugin for Android USB bulk transfer. It allows communicating with USB
 - Write raw bytes to a USB device.
 - Read bytes from a USB device.
 - Check connection status and disconnect.
+- Print PDF pages on ESC/POS thermal printers.
+- **Never blocks the UI**: USB transfers run on a background thread, one call at a time in the order you make them.
 - **Platform Safety**: Does nothing on non-Android platforms instead of failing.
+
+The [example app](example/lib/main.dart) lists USB devices, connects to one, and prints a sample receipt with each
+image setting.
 
 ## Usage
 
@@ -22,6 +27,9 @@ for (var device in devices) {
   print('Device: ${device['deviceName']}, VID: ${device['vendorId']}, PID: ${device['productId']}');
 }
 ```
+
+`manufacturerName` and `productName` are `null` for devices that don't report them, which is common for cheap
+printers.
 
 ### Connect to a USB Device
 
@@ -44,9 +52,28 @@ await plugin.write(data);
 ### Read Data
 
 ```dart
-final response = await plugin.read(64); // Read 64 bytes
-if (response != null) {
-  print('Received: $response');
+// Waits up to 5 seconds and returns only the bytes that arrived, which may be fewer than 64.
+final response = await plugin.read(64);
+print('Received: $response');
+```
+
+### Errors
+
+Failures are thrown as a `PlatformException` with one of these codes:
+
+| Code | Meaning |
+|---|---|
+| `NOT_CONNECTED` | `write`, `writePdf` or `read` was called before a successful `connect`. |
+| `WRITE_FAILED` | Not all data reached the device. A printer may be stuck mid-command; power-cycle it. |
+| `READ_FAILED` | Nothing arrived within 5 seconds, the transfer failed, or the device has no bulk IN endpoint. |
+| `FILE_NOT_FOUND` | The PDF passed to `writePdf` does not exist. |
+| `INVALID_ARGUMENT` | An argument was rejected on the Android side. |
+
+```dart
+try {
+  await plugin.write(data);
+} on PlatformException catch (e) {
+  if (e.code == 'NOT_CONNECTED') { /* connect first */ }
 }
 ```
 
