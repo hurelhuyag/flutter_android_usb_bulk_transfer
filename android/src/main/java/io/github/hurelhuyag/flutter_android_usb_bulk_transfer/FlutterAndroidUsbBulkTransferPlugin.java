@@ -65,7 +65,8 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
         } else {
           printer = new PosEscPrinter(context);
         }
-        result.success(null);
+        // Replies once the connection is established or has failed, which may be after the permission dialog.
+        printer.connect(result::success);
         break;
       case "write":
         byte[] data = (byte[]) call.arguments;

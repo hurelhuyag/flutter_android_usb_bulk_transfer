@@ -11,7 +11,10 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.util.Log;
+
+import java.util.function.Consumer;
 
 public class PosEscPrinter implements AutoCloseable {
 
@@ -25,6 +28,8 @@ public class PosEscPrinter implements AutoCloseable {
     private UsbEndpoint endpointOut;
     private UsbEndpoint endpointIn;
     private UsbInterface usbInterface;
+    private boolean receiverRegistered;
+    private Consumer<Boolean> pendingConnect;
 
     public PosEscPrinter(Context context) {
         this(context, 1305, 8211);
@@ -34,9 +39,6 @@ public class PosEscPrinter implements AutoCloseable {
         this.context = context;
         usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         usbDevice = findPrinter(vid, pid);
-        if (usbDevice != null) {
-            connect();
-        }
     }
 
     private UsbDevice findPrinter(int vid, int pid) {
@@ -52,22 +54,54 @@ public class PosEscPrinter implements AutoCloseable {
         return null;
     }
 
-    public void connect() {
+    /// Connects to the printer and reports the outcome to {@code onResult} exactly once: immediately when USB
+    /// permission is already granted, otherwise after the user answers the permission dialog. Reports false when the
+    /// device is missing, permission is denied, the device can't be opened, or this printer is closed while waiting.
+    public void connect(Consumer<Boolean> onResult) {
+        completePendingConnect(false);
         if (usbDevice == null) {
             Log.d(TAG, "Can't find printer device");
+            onResult.accept(false);
             return;
         }
-        if (!usbManager.hasPermission(usbDevice)) {
-            Log.d(TAG, "Requesting USB permission");
+        if (usbManager.hasPermission(usbDevice)) {
+            onResult.accept(open());
+            return;
+        }
 
+        Log.d(TAG, "Requesting USB permission");
+        pendingConnect = onResult;
+        if (!receiverRegistered) {
             var intentFilter = new IntentFilter(ACTION_USB_PERMISSION);
-            context.registerReceiver(usbReceiver, intentFilter, 0);
-
-            var permissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
-            usbManager.requestPermission(usbDevice, permissionIntent);
-            return;
+            // Android 14+ requires an explicit export flag for runtime receivers; the 3-arg overload is API 26+.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(usbReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                context.registerReceiver(usbReceiver, intentFilter);
+            }
+            receiverRegistered = true;
         }
 
+        // Must be mutable so the system can add EXTRA_PERMISSION_GRANTED, and Android 14+ only allows mutable
+        // PendingIntents with explicit intents, hence setPackage.
+        var intent = new Intent(ACTION_USB_PERMISSION).setPackage(context.getPackageName());
+        var flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
+        var permissionIntent = PendingIntent.getBroadcast(context, 0, intent, flags);
+        usbManager.requestPermission(usbDevice, permissionIntent);
+    }
+
+    private void completePendingConnect(boolean connected) {
+        var callback = pendingConnect;
+        pendingConnect = null;
+        if (callback != null) {
+            callback.accept(connected);
+        }
+    }
+
+    /// Opens the device and claims the printer interface. Requires USB permission.
+    private boolean open() {
+        endpointOut = null;
+        endpointIn = null;
         // Use the first interface that has a bulk OUT endpoint; interface 0 is not always the printer one.
         for (int i = 0; i < usbDevice.getInterfaceCount() && endpointOut == null; i++) {
             var intf = usbDevice.getInterface(i);
@@ -93,14 +127,22 @@ public class PosEscPrinter implements AutoCloseable {
         }
         if (endpointOut == null) {
             Log.e(TAG, "No bulk OUT endpoint found");
-            return;
+            return false;
         }
 
         connection = usbManager.openDevice(usbDevice);
-        if (connection != null) {
-            boolean claimed = connection.claimInterface(usbInterface, true);
-            Log.d(TAG, "Interface claimed: " + claimed);
+        if (connection == null) {
+            Log.e(TAG, "openDevice failed");
+            return false;
         }
+        boolean claimed = connection.claimInterface(usbInterface, true);
+        Log.d(TAG, "Interface claimed: " + claimed);
+        if (!claimed) {
+            connection.close();
+            connection = null;
+            return false;
+        }
+        return true;
     }
 
     public boolean isConnected() {
@@ -147,6 +189,8 @@ public class PosEscPrinter implements AutoCloseable {
 
     @Override
     public void close() {
+        unregisterReceiver();
+        completePendingConnect(false);
         if (connection != null) {
             var released = connection.releaseInterface(usbInterface);
             Log.d(TAG, "Interface released: " + released);
@@ -155,19 +199,23 @@ public class PosEscPrinter implements AutoCloseable {
         }
     }
 
+    private void unregisterReceiver() {
+        if (receiverRegistered) {
+            context.unregisterReceiver(usbReceiver);
+            receiverRegistered = false;
+        }
+    }
+
     private final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (ACTION_USB_PERMISSION.equals(action)) {
-                synchronized (this) {
-                    var device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        if(device != null) {
-                            Log.d(TAG, "Permission granted for " + device.getVendorId() + ":" + device.getProductId());
-                        }
-                    }
-                }
+            if (!ACTION_USB_PERMISSION.equals(intent.getAction())) {
+                return;
             }
+            unregisterReceiver();
+            var granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false);
+            Log.d(TAG, "USB permission " + (granted ? "granted" : "denied"));
+            // Finish the connection that connect() had to postpone while waiting for the user's answer.
+            completePendingConnect(granted && open());
         }
     };
 }

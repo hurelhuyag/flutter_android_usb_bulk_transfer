@@ -19,12 +19,13 @@ class MethodChannelFlutterAndroidUsbBulkTransfer extends FlutterAndroidUsbBulkTr
   }
   
   @override
-  Future<void> connect({int? vid, int? pid}) async {
-    if (!Platform.isAndroid) return;
-    await methodChannel.invokeMethod('connect', {
+  Future<bool> connect({int? vid, int? pid}) async {
+    if (!Platform.isAndroid) return false;
+    final connected = await methodChannel.invokeMethod<bool>('connect', {
       'vid': vid,
       'pid': pid,
     });
+    return connected ?? false;
   }
 
   @override

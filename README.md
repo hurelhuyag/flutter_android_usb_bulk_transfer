@@ -26,8 +26,12 @@ for (var device in devices) {
 ### Connect to a USB Device
 
 ```dart
-// Connect using specific VID and PID
-await plugin.connect(vid: 1234, pid: 5678);
+// Connect using specific VID and PID. If USB permission isn't granted yet, Android shows a permission dialog
+// and this completes after the user answers it.
+final connected = await plugin.connect(vid: 1234, pid: 5678);
+if (!connected) {
+  // Device not found, permission denied, or the device could not be opened.
+}
 ```
 
 ### Write Data

@@ -10,7 +10,12 @@ class FlutterAndroidUsbBulkTransfer {
     return FlutterAndroidUsbBulkTransferPlatform.instance.listUsbDevices();
   }
   
-  Future<void> connect({int? vid, int? pid}) {
+  /// Connects to the USB device with the given vendor/product ID.
+  ///
+  /// When USB permission hasn't been granted yet, Android shows a permission dialog and the returned future
+  /// completes only after the user answers it. Completes with `true` when connected, `false` when the device was not
+  /// found, permission was denied, or the device could not be opened.
+  Future<bool> connect({int? vid, int? pid}) {
     return FlutterAndroidUsbBulkTransferPlatform.instance.connect(vid: vid, pid: pid);
   }
 

@@ -29,7 +29,7 @@ abstract class FlutterAndroidUsbBulkTransferPlatform extends PlatformInterface {
     throw UnimplementedError('listUsbDevices() has not been implemented.');
   }
 
-  Future<void> connect({int? vid, int? pid}) {
+  Future<bool> connect({int? vid, int? pid}) {
     throw UnimplementedError('connect() has not been implemented.');
   }
 
