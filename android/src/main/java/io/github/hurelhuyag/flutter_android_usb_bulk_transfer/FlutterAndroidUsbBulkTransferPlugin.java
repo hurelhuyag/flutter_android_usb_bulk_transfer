@@ -56,6 +56,10 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
       case "connect":
         Integer vid = call.argument("vid");
         Integer pid = call.argument("pid");
+        if (printer != null) {
+          printer.close();
+          printer = null;
+        }
         if (vid != null && pid != null) {
           printer = new PosEscPrinter(context, vid, pid);
         } else {
@@ -65,8 +69,9 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
         break;
       case "write":
         byte[] data = (byte[]) call.arguments;
-        if (printer != null) {
-          printer.write(data);
+        if (printer != null && !printer.write(data)) {
+          result.error("WRITE_FAILED", "USB write failed; printer may be out of sync", null);
+          return;
         }
         result.success(null);
         break;
@@ -85,7 +90,10 @@ public class FlutterAndroidUsbBulkTransferPlugin implements FlutterPlugin, Metho
           } finally {
             bitmap.recycle();
           }
-          printer.write(cmd);
+          if (!printer.write(cmd)) {
+            result.error("WRITE_FAILED", "USB write failed; printer may be out of sync", path);
+            return;
+          }
         }
         result.success(null);
         break;

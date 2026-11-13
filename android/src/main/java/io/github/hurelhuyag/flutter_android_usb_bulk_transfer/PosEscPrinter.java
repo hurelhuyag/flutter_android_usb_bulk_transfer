@@ -17,6 +17,7 @@ public class PosEscPrinter implements AutoCloseable {
 
     private static final String ACTION_USB_PERMISSION = "io.github.hurelhuyag.usb.USB_PERMISSION";
     private static final String TAG = "PosEscPrinter";
+    private static final int WRITE_TIMEOUT_MS = 30_000;
     private Context context;
     private UsbManager usbManager;
     private UsbDevice usbDevice;
@@ -67,17 +68,32 @@ public class PosEscPrinter implements AutoCloseable {
             return;
         }
 
-        usbInterface = usbDevice.getInterface(0);
-        for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
-            UsbEndpoint ep = usbInterface.getEndpoint(i);
-            if (ep.getDirection() == UsbConstants.USB_DIR_OUT) {
-                Log.d(TAG, "USB_DIR_OUT found");
-                endpointOut = ep;
+        // Use the first interface that has a bulk OUT endpoint; interface 0 is not always the printer one.
+        for (int i = 0; i < usbDevice.getInterfaceCount() && endpointOut == null; i++) {
+            var intf = usbDevice.getInterface(i);
+            UsbEndpoint out = null;
+            UsbEndpoint in = null;
+            for (int j = 0; j < intf.getEndpointCount(); j++) {
+                var ep = intf.getEndpoint(j);
+                if (ep.getType() != UsbConstants.USB_ENDPOINT_XFER_BULK) {
+                    continue;
+                }
+                if (ep.getDirection() == UsbConstants.USB_DIR_OUT && out == null) {
+                    out = ep;
+                } else if (ep.getDirection() == UsbConstants.USB_DIR_IN && in == null) {
+                    in = ep;
+                }
             }
-            if (ep.getDirection() == UsbConstants.USB_DIR_IN) {
-                Log.d(TAG, "USB_DIR_IN found");
-                endpointIn = ep;
+            if (out != null) {
+                Log.d(TAG, "Using interface " + i + ", bulk OUT found, bulk IN " + (in != null ? "found" : "missing"));
+                usbInterface = intf;
+                endpointOut = out;
+                endpointIn = in;
             }
+        }
+        if (endpointOut == null) {
+            Log.e(TAG, "No bulk OUT endpoint found");
+            return;
         }
 
         connection = usbManager.openDevice(usbDevice);
@@ -91,24 +107,30 @@ public class PosEscPrinter implements AutoCloseable {
         return connection != null;
     }
 
-    public void write(byte[] buf) {
+    /// Returns false when the data could not be fully sent. The printer may then be stuck in the middle of a command
+    /// (bulkTransfer returns -1 on timeout without saying how many bytes went out), so the caller must treat the
+    /// printer as out of sync.
+    public boolean write(byte[] buf) {
         if (connection == null || endpointOut == null) {
             Log.d(TAG, "Printer not connected");
-            return;
+            return false;
         }
 
         var chunkSize = 4096;
-        for (var i = 0; i < buf.length; i += chunkSize) {
-            var remaining = buf.length - i;
-            var len = Math.min(remaining, chunkSize);
-            Log.d(TAG, "Sending: i:"  + i + ", len:" + len);
-            var sent = connection.bulkTransfer(endpointOut, buf, i, len, 5000);
-            Log.d(TAG, "Send Status: "  + sent);
-            if (sent != len) {
-                Log.e(TAG, "Send failed");
-                break;
+        var offset = 0;
+        while (offset < buf.length) {
+            var len = Math.min(buf.length - offset, chunkSize);
+            Log.d(TAG, "Sending: offset:" + offset + ", len:" + len);
+            // The printer stops accepting data while busy printing a large bitmap, so allow a generous timeout.
+            var sent = connection.bulkTransfer(endpointOut, buf, offset, len, WRITE_TIMEOUT_MS);
+            Log.d(TAG, "Send Status: " + sent);
+            if (sent <= 0) {
+                Log.e(TAG, "Send failed at offset " + offset + " of " + buf.length);
+                return false;
             }
+            offset += sent;
         }
+        return true;
     }
 
     public void read(byte[] buf) {
